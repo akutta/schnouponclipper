@@ -1,7 +1,9 @@
+[![Docker Build Status](https://img.shields.io/docker/cloud/automated/akutta/schnouponclipper.svg)](https://hub.docker.com/r/akutta/schnouponclipper)
+
 # schnouponclipper
 
 ## Sniff the X-SSO-SCHNUCKS-TOKEN
-* `Chrome`: `View->Developer->Developer Tools` 
+* `Chrome`: `View->Developer->Developer Tools`
 * Filter Network requests by `XHR`
 * Navigate to or Refresh: https://nourish.schnucks.com/app/coupons/home
 * Look for any request that contains above header [Examples:  config, phones, emails, clipped, coupons]
