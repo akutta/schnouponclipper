@@ -1,7 +1,9 @@
 FROM node:lts-alpine
 WORKDIR /usr/src/app
 
-COPY package.json .
-COPY ./src/ .
+COPY *.json ./
+COPY ./src/ ./
+
+RUN npm ci
 
 ENTRYPOINT node index.js
