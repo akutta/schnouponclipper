@@ -1,6 +1,6 @@
 const axios = require('axios');
 const SCHNOUPON_KEY = process.env['SCHNOUPON_KEY'];
-const INTERVAL = 60000 * 60 * 24;
+const INTERVAL = 60000 * 60 * 3;
 
 if ( !SCHNOUPON_KEY || SCHNOUPON_KEY.length <= 0 ) throw new Error("Must set environment variable SCHNOUPON_KEY when running container");
 
@@ -16,7 +16,22 @@ async function getAvailableCoupons() {
   return response.data.data
 }
 
+async function getClippedCoupons() {
+  const response = await axios.get('/app/coupons/api/users/authenticated/clipped')
+  return response.data.data;
+}
+
+async function filterClippedCoupons(coupons) {
+  let clippedCoupons = {};
+  (await getClippedCoupons()).forEach(coupon => {
+    clippedCoupons[coupon.id] = true;
+  })
+
+  return coupons.filter(coupon => !clippedCoupons[coupon.id])
+}
+
 async function clipAvailableCoupons(coupons) {
+  console.log(`Clipping ${coupons.length} unclipped coupons`)
   for (let coupon of coupons) {
     console.log(`clipping coupon: ${coupon.brand} - ${coupon.shortDescription}`)
     await axios.post('/app/coupons/api/users/authenticated/clipped', {
@@ -27,7 +42,10 @@ async function clipAvailableCoupons(coupons) {
   }
 }
 
-getAvailableCoupons().then(clipAvailableCoupons)
+getAvailableCoupons()
+  .then(filterClippedCoupons)
+  .then(clipAvailableCoupons)
+
 setInterval(() => {
   getAvailableCoupons()
     .then(clipAvailableCoupons)
