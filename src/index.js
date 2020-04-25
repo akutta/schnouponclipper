@@ -1,15 +1,23 @@
 const axios = require('axios');
-const SCHNOUPON_KEY = process.env['SCHNOUPON_KEY'];
+const USERNAME = process.env['USERNAME'];
+const PASSWORD = process.env['PASSWORD'];
 const INTERVAL = 60000 * 60 * 3;
+const uuid = require('uuid').v1;
 
-if ( !SCHNOUPON_KEY || SCHNOUPON_KEY.length <= 0 ) throw new Error("Must set environment variable SCHNOUPON_KEY when running container");
+if ( !USERNAME || USERNAME.length <= 0 ) throw new Error("Must set environment variable USERNAME when running container");
+if ( !PASSWORD || PASSWORD.length <= 0 ) throw new Error("Must set environment variable PASSWORD when running container");
 
 axios.defaults.headers.common['Content-Type'] = 'application/json';
-axios.defaults.headers.common['X-SCHNUCKS-CLIENT-ID'] = '3e0bd456-0155-4d3e-ab18-d6767fcd4ff7';
-axios.defaults.headers.common['X-SSO-SCHNUCKS-TOKEN'] = SCHNOUPON_KEY;
+axios.defaults.headers.common['X-SCHNUCKS-CLIENT-ID'] = uuid();
 axios.defaults.baseURL = 'https://nourish.schnucks.com';
 
 console.log('Starting Schnoupon Clipper')
+
+async function getApiKey() {
+  const response = await axios.post('https://appservices.schnucks.com/app/sso/api/user/authenticate', { logonId: USERNAME, password: PASSWORD })
+  axios.defaults.headers.common['X-SSO-SCHNUCKS-TOKEN'] = response.headers['x-sso-schnucks-token']
+  return response.headers['x-sso-schnucks-token'];
+}
 
 async function getAvailableCoupons() {
   const response = await axios.get('/app/coupons/api/coupons')
@@ -25,6 +33,9 @@ async function filterClippedCoupons(coupons) {
   let clippedCoupons = {};
   (await getClippedCoupons()).forEach(coupon => {
     clippedCoupons[coupon.id] = true;
+    if ( coupon.redeemedDate ) {
+      console.log(`Congratulations!  You have redeemed ${coupon.description}`)
+    }
   })
 
   return coupons.filter(coupon => !clippedCoupons[coupon.id])
@@ -40,13 +51,18 @@ async function clipAvailableCoupons(coupons) {
       .then(res => console.log(res.data))
       .catch(err => console.log(err.toJSON()))
   }
+  console.log(`Will check again at ${new Date(Date.now() + INTERVAL)}`)
 }
 
-getAvailableCoupons()
+console.log(`${new Date()} - Attempting to Clip!!`)
+getApiKey()
+  .then(getAvailableCoupons)
   .then(filterClippedCoupons)
   .then(clipAvailableCoupons)
 
 setInterval(() => {
-  getAvailableCoupons()
+  console.log(`${new Date()} - Attempting to Clip!!`)
+  getApiKey()
+    .then(getAvailableCoupons)
     .then(clipAvailableCoupons)
 }, INTERVAL)
