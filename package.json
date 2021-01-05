@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/akutta/schnouponclipper#readme",
   "dependencies": {
-    "axios": "^0.19.0",
+    "axios": "^0.21.1",
     "uuid": "^7.0.3"
   }
 }
